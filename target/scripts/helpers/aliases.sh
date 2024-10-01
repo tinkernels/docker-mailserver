@@ -12,17 +12,13 @@ function _handle_postfix_virtual_config() {
   local DATABASE_VIRTUAL=/tmp/docker-mailserver/postfix-virtual.cf
 
   if [[ -f ${DATABASE_VIRTUAL} ]]; then
-    # fixing old virtual user file
-    if grep -q ",$" "${DATABASE_VIRTUAL}"; then
-      sed -i -e "s|, |,|g" -e "s|,$||g" "${DATABASE_VIRTUAL}"
-    fi
-
     cp -f "${DATABASE_VIRTUAL}" /etc/postfix/virtual
   else
     _log 'debug' "'${DATABASE_VIRTUAL}' not provided - no mail alias/forward created"
   fi
 }
 
+# TODO: Investigate why this file is always created, nothing seems to append only the cp below?
 function _handle_postfix_regexp_config() {
   : >/etc/postfix/regexp
 
@@ -30,12 +26,7 @@ function _handle_postfix_regexp_config() {
     _log 'trace' "Adding regexp alias file postfix-regexp.cf"
 
     cp -f /tmp/docker-mailserver/postfix-regexp.cf /etc/postfix/regexp
-
-    if ! grep 'virtual_alias_maps.*pcre:/etc/postfix/regexp' /etc/postfix/main.cf; then
-      sed -i -E \
-        's|virtual_alias_maps(.*)|virtual_alias_maps\1 pcre:/etc/postfix/regexp|g' \
-        /etc/postfix/main.cf
-    fi
+    _add_to_or_update_postfix_main 'virtual_alias_maps' 'pcre:/etc/postfix/regexp'
   fi
 }
 

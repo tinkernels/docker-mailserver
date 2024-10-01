@@ -4,10 +4,55 @@ function _escape() {
   echo "${1//./\\.}"
 }
 
+# TODO: Not in use currently. Maybe in the future: https://github.com/docker-mailserver/docker-mailserver/pull/3484/files#r1299410851
+# Replaces a string so that it can be used inside
+# `sed` safely.
+#
+# @param ${1} = string to escape
+# @output     = prints the escaped string
+function _escape_for_sed() {
+  sed -E 's/[]\/$*.^[]/\\&/g' <<< "${1:?String to escape for sed is required}"
+}
+
 # Returns input after filtering out lines that are:
 # empty, white-space, comments (`#` as the first non-whitespace character)
 function _get_valid_lines_from_file() {
+  _convert_crlf_to_lf_if_necessary "${1}"
+  _append_final_newline_if_missing "${1}"
+
   grep --extended-regexp --invert-match "^\s*$|^\s*#" "${1}" || true
+}
+
+# This is to sanitize configs from users that unknowingly introduced CRLF:
+function _convert_crlf_to_lf_if_necessary() {
+  if [[ $(file "${1}") =~ 'CRLF' ]]; then
+    _log 'warn' "File '${1}' contains CRLF line-endings"
+
+    if [[ -w ${1} ]]; then
+      _log 'debug' 'Converting CRLF to LF'
+      sed -i 's|\r||g' "${1}"
+    else
+      _log 'warn' "File '${1}' is not writable - cannot change CRLF to LF"
+    fi
+  fi
+}
+
+# This is to sanitize configs from users that unknowingly removed the end-of-file LF:
+function _append_final_newline_if_missing() {
+  # Correctly detect a missing final newline and fix it:
+  # https://stackoverflow.com/questions/38746/how-to-detect-file-ends-in-newline#comment82380232_25749716
+  # https://unix.stackexchange.com/questions/31947/how-to-add-a-newline-to-the-end-of-a-file/441200#441200
+  # https://unix.stackexchange.com/questions/159557/how-to-non-invasively-test-for-write-access-to-a-file
+  if [[ $(tail -c1 "${1}" | wc -l) -eq 0 ]]; then
+    # Avoid fixing when the destination is read-only:
+    if [[ -w ${1} ]]; then
+      printf '\n' >> "${1}"
+
+      _log 'info' "File '${1}' was missing a final newline - this has been fixed"
+    else
+      _log 'warn' "File '${1}' is missing a final newline - it is not writable, hence it was not fixed - the last line will not be processed!"
+    fi
+  fi
 }
 
 # Provide the name of an environment variable to this function
@@ -29,9 +74,9 @@ function _get_dms_env_value() {
 # /var/mail folders (used during startup and change detection handling).
 function _chown_var_mail_if_necessary() {
   # fix permissions, but skip this if 3 levels deep the user id is already set
-  if find /var/mail -maxdepth 3 -a \( \! -user 5000 -o \! -group 5000 \) | read -r; then
+  if find /var/mail -maxdepth 3 -a \( \! -user "${DMS_VMAIL_UID}" -o \! -group "${DMS_VMAIL_GID}" \) | read -r; then
     _log 'trace' 'Fixing /var/mail permissions'
-    chown -R 5000:5000 /var/mail || return 1
+    chown -R "${DMS_VMAIL_UID}:${DMS_VMAIL_GID}" /var/mail || return 1
   fi
 }
 
@@ -117,9 +162,17 @@ function _replace_by_env_in_file() {
 function _env_var_expect_zero_or_one() {
   local ENV_VAR_NAME=${1:?ENV var name must be provided to _env_var_expect_zero_or_one}
 
-  [[ ${!ENV_VAR_NAME} =~ ^(0|1)$ ]] && return 0
-  _log 'warn' "The value of '${ENV_VAR_NAME}' is not zero or one ('${!ENV_VAR_NAME}'), but was expected to be"
-  return 1
+  if [[ ! -v ${ENV_VAR_NAME} ]]; then
+    _log 'warn' "'${ENV_VAR_NAME}' is not set, but was expected to be"
+    return 1
+  fi
+
+  if [[ ! ${!ENV_VAR_NAME} =~ ^(0|1)$ ]]; then
+    _log 'warn' "The value of '${ENV_VAR_NAME}' (= '${!ENV_VAR_NAME}') is not 0 or 1, but was expected to be"
+    return 1
+  fi
+
+  return 0
 }
 
 # Check if an environment variable's value is an integer.

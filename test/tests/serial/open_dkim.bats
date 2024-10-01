@@ -113,14 +113,14 @@ function teardown() { _default_teardown ; }
   __init_container_without_waiting '/tmp/docker-mailserver'
 
   # generate first key (with a custom selector)
-  __should_generate_dkim_key 4 '2048' 'domain1.tld' 'mailer'
+  __should_generate_dkim_key 4 '1024' 'domain1.tld' 'mailer'
   __assert_outputs_common_dkim_logs
   # generate two additional keys different to the previous one
-  __should_generate_dkim_key 2 '2048' 'domain2.tld,domain3.tld'
+  __should_generate_dkim_key 2 '1024' 'domain2.tld,domain3.tld'
   __assert_logged_dkim_creation 'domain2.tld'
   __assert_logged_dkim_creation 'domain3.tld'
   # generate an additional key whilst providing already existing domains
-  __should_generate_dkim_key 1 '2048' 'domain3.tld,domain4.tld'
+  __should_generate_dkim_key 1 '1024' 'domain3.tld,domain4.tld'
   __assert_logged_dkim_creation 'domain4.tld'
 
   __should_have_tables_trustedhosts_for_domain
@@ -197,7 +197,7 @@ function __should_support_creating_key_of_size() {
   __assert_logged_dkim_creation 'localhost.localdomain'
   __assert_logged_dkim_creation 'otherdomain.tld'
 
-  __should_have_expected_files "${EXPECTED_KEYSIZE:-4096}"
+  __should_have_expected_files "${EXPECTED_KEYSIZE:-2048}"
   _run_in_container rm -r /tmp/docker-mailserver/opendkim
 }
 
@@ -226,7 +226,7 @@ function __should_have_expected_files() {
   # DKIM private key for signing, parse it to verify private key size is correct:
   _run_in_container_bash "openssl rsa -in '${TARGET_DIR}/mail.private' -noout -text"
   assert_success
-  assert_line --index 0 "RSA Private-Key: (${EXPECTED_KEYSIZE} bit, 2 primes)"
+  assert_line --index 0 "Private-Key: (${EXPECTED_KEYSIZE} bit, 2 primes)"
 
   # DKIM record, extract public key (base64 encoded, potentially multi-line)
   # - tail to exclude first line,
@@ -240,7 +240,7 @@ function __should_have_expected_files() {
   ) | openssl enc -base64 -d | openssl pkey -inform DER -pubin -noout -text
   "
   assert_success
-  assert_line --index 0 "RSA Public-Key: (${EXPECTED_KEYSIZE} bit)"
+  assert_line --index 0 "Public-Key: (${EXPECTED_KEYSIZE} bit)"
 
   # Contents is for expected DKIM_DOMAIN and selector (mail):
   _run_in_container cat "${TARGET_DIR}/mail.txt"

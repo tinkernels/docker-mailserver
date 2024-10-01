@@ -26,7 +26,7 @@ Those variables contain the LDAP lookup filters for postfix, using `%s` as the p
     - Technically, there is no difference between `ALIAS` and `GROUP`, but ideally you should use `ALIAS` for personal aliases for a singular person (like `ceo@example.org`) and `GROUP` for multiple people (like `hr@example.org`).
 - ...for outgoing email, the sender address is put through the `SENDERS` filter, and only if the authenticated user is one of the returned entries, the email can be sent.
     - This only applies if `SPOOF_PROTECTION=1`.
-    - If the `SENDERS` filter is missing, the `USER`, `ALIAS` and `GROUP` filters will be used in in a disjunction (OR).
+    - If the `SENDERS` filter is missing, the `USER`, `ALIAS` and `GROUP` filters will be used in a disjunction (OR).
     - To for example allow users from the `admin` group to spoof any sender email address, and to force everyone else to only use their personal mailbox address for outgoing email, you can use something like this: `(|(memberOf=cn=admin,*)(mail=%s))`
 
 ???+ example
@@ -34,7 +34,6 @@ Those variables contain the LDAP lookup filters for postfix, using `%s` as the p
     A really simple `LDAP_QUERY_FILTER` configuration, using only the _user filter_ and allowing only `admin@*` to spoof any sender addresses.
 
     ```yaml
-    - ENABLE_LDAP=1 # with the :edge tag, use ACCOUNT_PROVISIONER
     - LDAP_START_TLS=yes
     - ACCOUNT_PROVISIONER=LDAP
     - LDAP_SERVER_HOST=ldap.example.org
@@ -57,7 +56,7 @@ These variables specify the LDAP filters that dovecot uses to determine if a use
 This is split into the following two lookups, both using `%u` as the placeholder for the full login name ([see dovecot documentation for a full list of placeholders](https://doc.dovecot.org/configuration_manual/config_file/config_variables/)). Usually you only need to set `DOVECOT_USER_FILTER`, in which case it will be used for both filters.
 
 - `DOVECOT_USER_FILTER` is used to get the account details (uid, gid, home directory, quota, ...) of a user.
-- `DOVECOT_PASS_FILTER` is used to get the password information of the user, and is in pretty much all cases identical to `DOVECOT_USER_FILTER` (which is the default behaviour if left away).
+- `DOVECOT_PASS_FILTER` is used to get the password information of the user, and is in pretty much all cases identical to `DOVECOT_USER_FILTER` (which is the default behavior if left away).
 
 If your directory doesn't have the [postfix-book schema](https://github.com/variablenix/ldap-mail-schema/blob/master/postfix-book.schema) installed, then you must change the internal attribute handling for dovecot. For this you have to change the `pass_attr` and the `user_attr` mapping, as shown in the example below:
 
@@ -215,7 +214,6 @@ The changes on the configurations necessary to work with Active Directory (**onl
           - ENABLE_POSTGREY=1
 
           # >>> Postfix LDAP Integration
-          - ENABLE_LDAP=1 # with the :edge tag, use ACCOUNT_PROVISIONER
           - ACCOUNT_PROVISIONER=LDAP
           - LDAP_SERVER_HOST=ldap.example.org
           - LDAP_BIND_DN=cn=admin,ou=users,dc=example,dc=org
@@ -284,7 +282,6 @@ The changes on the configurations necessary to work with Active Directory (**onl
           # <<< SASL Authentication
 
           # >>> Postfix Ldap Integration
-          - ENABLE_LDAP=1 # with the :edge tag, use ACCOUNT_PROVISIONER
           - ACCOUNT_PROVISIONER=LDAP
           - LDAP_SERVER_HOST=<yourLdapContainer/yourLdapServer>
           - LDAP_SEARCH_BASE=dc=mydomain,dc=loc

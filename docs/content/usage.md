@@ -2,16 +2,16 @@
 title: Usage
 ---
 
-This pages explains how to get started with DMS. The guide uses Docker Compose as a reference. In our examples, a volume mounts the host location [`docker-data/dms/config/`][docs-dms-config-volume] to `/tmp/docker-mailserver/` inside the container.
+This page explains how to get started with DMS. The guide uses Docker Compose as a reference. In our examples, a volume mounts the host location [`docker-data/dms/config/`][docs::dms-volumes-config] to `/tmp/docker-mailserver/` inside the container.
 
-[docs-dms-config-volume]: ./faq.md#what-about-the-docker-datadmsconfig-directory
+[docs::dms-volumes-config]: ./config/advanced/optional-config.md#volumes-config
 
 ## Preliminary Steps
 
 Before you can get started with deploying your own mail server, there are some requirements to be met:
 
 1. You need to have a host that you can manage.
-2. You need to own a domain, and you need to able to manage DNS for this domain.
+2. You need to own a domain, and you need to be able to manage DNS for this domain.
 
 ### Host Setup
 
@@ -192,3 +192,4 @@ Here are some tools you can use to verify your configuration:
 2. [DMARC Analyzer](https://www.mimecast.com/products/dmarc-analyzer/spf-record-check/)
 3. [mail-tester.com](https://www.mail-tester.com/)
 4. [multiRBL.valli.org](https://multirbl.valli.org/)
+5. [internet.nl](https://internet.nl/test-mail/)
